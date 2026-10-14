@@ -1,0 +1,121 @@
+================================================
+  Esteshari v2.1 – دليل التشغيل خطوة بخطوة
+  © All rights reserved. Nexus Solutions
+================================================
+
+المحتويات:
+  public/index.html   التطبيق
+  public/app.js       المنطق (مشاريع متعددة + التحديث + PDF)
+  public/config.js    مفاتيح السحابة وإعدادات التحديث
+  public/icon.svg     الأيقونة
+  sql/schema.sql      جداول Supabase (شامل v2.1)
+  sql/migrations_v2.sql  ترقية قواعد البيانات القديمة إلى v2.1
+  electron/           سطح مكتب ويندوز (+ preload للتحديث)
+  package.json        بناء ملف exe
+
+------------------------------------------------
+أ) إعداد Supabase (مرة واحدة)
+------------------------------------------------
+ 1. افتح https://supabase.com وسجّل حساباً مجانياً
+ 2. New Project → اسم مثل esteshari
+ 3. من القائمة: SQL Editor → New query
+ 4. إذا كان مشروعك جديداً (لا يوجد لديك جداول):
+       انسخ محتوى  sql/schema.sql  والصقه ثم Run
+    إذا كان لديك قواعد البيانات القديمة v2.0:
+       انسخ محتوى  sql/migrations_v2.sql  والصقه ثم Run
+ 5. انسخ المفاتيح من  Project Settings → API:
+       Project URL
+       anon / public / publishable  (ليس service_role)
+ 6. افتح public/config.js وضع الرابط والمفتاح
+ 7. Authentication → Providers → Email
+       عطّل Confirm email (للتجربة) → Save
+
+------------------------------------------------
+ب) تشغيل التطبيق
+------------------------------------------------
+ افتح public/index.html في Chrome أو Edge
+
+ 1) Create Account → اختر Consultant أو Contractor
+ 2) من قائمة Projects أنشئ مشروعاً (Code + Name)
+ 3) أنت تصبح Admin
+ 4) Members → أضف مستخدمين مسجّلين مسبقاً
+ 5) كل عضو يرى فقط مشاريعه
+
+------------------------------------------------
+ج) الميزات الجديدة في v2.1
+------------------------------------------------
+ 1) التحديث التلقائي
+    - داخل البرنامج: Profile → Check for updates (أو Help في نسخة سطح المكتب)
+    - نسخة سطح المكتب: Help → Check for Updates
+    - عند صدور نسخة جديدة يظهر شريط أعلى التطبيق، ثم:
+        تحميل ← إعادة تشغيل للتثبيت
+    - للمطوّر فقط: عدّل APP_VERSION في package.json و public/config.js
+
+ 2) تعديل الملف الشخصي
+    - القائمة: My Profile
+    - الاسم + الإيميل + كلمة المرور + نوع الحساب
+    - تغيير الإيميل يتطلب تأكيد الإيميل الجديد إن كان مفعّلاً في Supabase
+
+ 3) تعديل وحذف المشاريع
+    - Projects → Edit لتعديل (Code, Name, Client, Location, Description)
+    - Projects → Delete (يستلزم كتابة كود المشروع للتأكيد)
+    - الحذف نهائي: يمسح المستندات والملفات والقرارات
+    - متاح لمدير المشروع (Admin) فقط
+
+ 4) IR / MIR / QSS
+    - في صفحة Submit Document ظهر حقل Document type:
+        Submittal – IR (Information Request)
+        – MIR (Material Inspection Request)
+        – QSS (Quality Submittal Sheet)
+    - عند اختيار IR/MIR/QSS تظهر حقول إضافية:
+        Reference, Requested by, Priority
+    - لتعديل أسماء التسميات: عدّل DOC_TYPES في public/app.js
+
+ 5) رفع ملفات PDF
+    - في Submit Document: حقل Attach PDF (حد أقصى 25 ميجابايت)
+    - المخزن: Supabase Storage bucket باسم documents (تم إنشاؤه تلقائياً)
+    - من صفحة المستند: Open / Download / استبدال الملف
+    - لتغيير الحد الأقصى: MAX_FILE_MB في public/config.js
+
+ 6) تصدير الاعتمادات PDF
+    - صفحة المستند: Export approval sheet (PDF)
+    - صفحة Document Register: Export approvals (PDF)
+    - في نسخة سطح المكتب يُحفظ الملف مباشرة عبر نافذة الحفظ
+    - في المتصفح: يُنزَّل مباشرة أو عبر طباعة المتصفح (اختياري)
+
+------------------------------------------------
+د) بناء ملف ويندوز exe (اختياري)
+------------------------------------------------
+ على جهاز ويندوز بعد تثبيت Node.js:
+   cd esteshari-cloud
+   npm install
+   npm run pack:win
+ الملفات في مجلد dist
+
+ قبل البناء: تأكد من تعبئة config.js
+
+------------------------------------------------
+هـ) نشر التحديثات تلقائياً (لمهندس النظام)
+------------------------------------------------
+ 1. ارفع مخرجات البناء إلى رابط ثابت، مثلاً:
+      https://example.com/esteshari-releases/
+    يجب أن يحتوي على:
+      Esteshari Setup 2.2.0.exe
+      Esteshari Setup 2.2.0.exe.blockmap
+      latest.yml
+ 2. عدّل publish في package.json:
+      "publish": [{ "provider": "generic", "url": "https://example.com/esteshari-releases/" }]
+ 3. ارفع النسخة الجديدة بنفس الرابط ثم شغّل
+    التطبيق عند أي مهندس → سيكتشف التحديث تلقائياً
+ 4. من مفاتيح Windows Certificate اختياري:
+      "win": { "certificateSubjectName": "Esteshari" }
+
+------------------------------------------------
+ملاحظات
+------------------------------------------------
+ - لا توجد مشاريع أو بيانات افتراضية
+ - الحساب يعمل من أي جهاز بعد تسجيل الدخول
+ - البيانات على سحابة Supabase وليس على الجهاز
+ - بعد تشغيل migrations_v2.sql: خروج ثم دخول مرة واحدة
+
+================================================

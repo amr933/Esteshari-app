@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>Esteshari – MEP Document Portal</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PDF export (optional – the app falls back to the browser print dialog if these fail to load) -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{--bg:#0b1220;--surface:#111827;--surface2:#1a2332;--card:#151c2c;--border:#243044;--text:#e8eef7;--muted:#8b9bb4;--primary:#3b82f6;--primary-h:#2563eb;--accent:#38bdf8;--danger:#ef4444;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hidden{display:none!important}
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:900px){.auth-wrap{grid-template-columns:1fr}.auth-hero{display:none}}
+.auth-hero{background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#0c4a6e);padding:48px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.auth-hero-inner{position:relative;z-index:1}
+.brand-mark{display:flex;align-items:center;gap:14px;margin-bottom:48px}
+.brand-mark img{width:52px;height:52px;border-radius:12px}
+.brand-mark .name{font-size:22px;font-weight:700}
+.brand-mark .tag{font-size:12px;color:#93c5fd;margin-top:2px}
+.hero-title{font-size:28px;font-weight:700;line-height:1.25;margin-bottom:14px;max-width:380px}
+.hero-text{color:#94a3b8;font-size:15px;max-width:360px}
+.hero-footer{position:relative;z-index:1;color:#64748b;font-size:12px}
+.auth-panel{display:flex;align-items:center;justify-content:center;padding:32px 24px;background:var(--surface)}
+.auth-card{width:100%;max-width:400px}
+.auth-card h2{font-size:22px;font-weight:700;margin-bottom:6px}
+.auth-card .lead{color:var(--muted);font-size:14px;margin-bottom:20px}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px;margin-bottom:20px}
+.tabs button{flex:1;padding:10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer}
+.tabs button.active{background:var(--card);color:var(--text)}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.fg input,.fg select,.fg textarea{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.role-card{border:1.5px solid var(--border);border-radius:12px;padding:14px 12px;cursor:pointer;text-align:center;background:var(--bg)}
+.role-card.selected{border-color:var(--primary);background:rgba(59,130,246,.12)}
+.role-card .ic{font-size:22px;margin-bottom:4px}.role-card .rl{font-size:13px;font-weight:700}.role-card .rd{font-size:11px;color:var(--muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border:none;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;min-height:44px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff;width:100%}.btn-primary:hover:not(:disabled){background:var(--primary-h)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:8px 14px;font-size:13px;min-height:36px;width:auto}
+.alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px}
+.alert-err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+.alert-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25)}
+.alert-warn{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.setup-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;font-size:13px;color:var(--muted);line-height:1.55}
+.setup-box strong{color:var(--text)}.setup-box code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;color:#93c5fd}
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50}
+.side-head{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.side-head img{width:40px;height:40px;border-radius:10px}
+.side-head .bn{font-weight:700;font-size:16px}.side-head .bt{font-size:11px;color:var(--muted)}
+.nav{flex:1;overflow-y:auto;padding:12px 10px}
+.nav a{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--muted);font-size:14px;font-weight:500;margin-bottom:2px}
+.nav a:hover{background:var(--surface2);color:var(--text);text-decoration:none}
+.nav a.active{background:rgba(59,130,246,.15);color:#93c5fd}
+.nav a .badge-n{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;border-radius:999px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+.side-foot{padding:14px;border-top:1px solid var(--border);font-size:13px}
+.side-foot .uname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-foot .urole{color:var(--muted);font-size:11px;margin-top:2px}
+.side-foot .copyright{margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:10px;color:#4b5563;line-height:1.4}
+.main{flex:1;margin-left:260px;min-width:0;display:flex;flex-direction:column}
+.topbar{display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+.content{padding:28px 24px 48px;max-width:1120px;width:100%;margin:0 auto;flex:1}
+.page-footer{text-align:center;padding:16px;font-size:11px;color:#4b5563;border-top:1px solid var(--border)}
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+@media(min-width:640px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:960px){.stats{grid-template-columns:repeat(6,1fr)}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat .num{font-size:26px;font-weight:800}.stat .lbl{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase}
+.stat.c1 .num{color:#60a5fa}.stat.c2 .num{color:#fbbf24}.stat.c3 .num{color:#a78bfa}
+.stat.c4 .num{color:#4ade80}.stat.c5 .num{color:#fb923c}.stat.c6 .num{color:#f87171}
+.actions-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.card-h{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.card-b{padding:18px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:11px 14px;background:var(--surface2);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.b-submitted{background:rgba(59,130,246,.15);color:#93c5fd}
+.b-under_review{background:rgba(139,92,246,.15);color:#c4b5fd}
+.b-approved{background:rgba(34,197,94,.15);color:#86efac}
+.b-approved_as_noted{background:rgba(16,185,129,.15);color:#6ee7b7}
+.b-revise_resubmit{background:rgba(245,158,11,.15);color:#fcd34d}
+.b-rejected{background:rgba(239,68,68,.15);color:#fca5a5}
+.b-info_required{background:rgba(14,165,233,.15);color:#7dd3fc}
+.empty{text-align:center;padding:48px 16px;color:var(--muted)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#94a3b8}
+.decision-opt{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--bg)}
+.decision-opt.selected{border-color:var(--primary);background:rgba(59,130,246,.1)}
+.decision-opt input{accent-color:var(--primary)}
+.notif-item{padding:14px 16px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card)}
+.notif-item.unread{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08)}
+.notif-item .t{font-weight:600;font-size:14px}.notif-item .b{font-size:13px;color:var(--muted);margin-top:4px}.notif-item .d{font-size:11px;color:#64748b;margin-top:8px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px}
+.meta-grid .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+@media(max-width:600px){.meta-grid{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:640px){.grid-3{grid-template-columns:1fr}}
+@media(max-width:768px){.sidebar{transform:translateX(-110%);transition:transform .25s}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.topbar{display:flex}.overlay-side{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:45}}
+.cloud-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#86efac;background:rgba(34,197,94,.12);padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.nav-sec{padding:8px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* ---- v2.1 ---- */
+.badge-t-submittal{background:rgba(59,130,246,.15);color:#93c5fd}
+.badge-t-ir{background:rgba(168,85,247,.15);color:#d8b4fe}
+.badge-t-mir{background:rgba(20,184,166,.15);color:#5eead4}
+.badge-t-qss{background:rgba(244,114,182,.15);color:#f9a8d4}
+.update-banner{display:none;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(90deg,rgba(37,99,235,.25),rgba(56,189,248,.15));border-bottom:1px solid rgba(59,130,246,.4);padding:10px 16px;font-size:13px}
+.update-banner.show{display:flex}
+.update-banner .ub-t{font-weight:700}
+.update-banner .ub-p{flex:1;min-width:180px;height:6px;background:rgba(255,255,255,.12);border-radius:999px;overflow:hidden}
+.update-banner .ub-p i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.doc-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+.doc-file .fi{font-size:22px}
+.doc-file .fn{font-weight:600;font-size:13px;word-break:break-all}
+.doc-file .fs{font-size:11px;color:var(--muted)}
+input[type=file]{width:100%;padding:10px;background:var(--bg);border:1px dashed var(--border);border-radius:10px;cursor:pointer}
+input[type=file]::file-selector-button{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-right:10px;cursor:pointer;font:inherit;font-size:13px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filters select,.filters input{width:auto;min-width:150px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)}
+.pw-meter{height:5px;background:var(--border);border-radius:999px;overflow:hidden;margin-top:6px}
+.pw-meter i{display:block;height:100%;width:0;background:var(--danger)}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal-h{padding:16px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.modal-b{padding:18px}
+.modal-x{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.danger-zone{border-color:rgba(239,68,68,.35)}
+.table-tools{display:flex;gap:8px;flex-wrap:wrap}
+td.center{text-align:center}
+.row-actions{display:flex;gap:10px;flex-wrap:wrap}
+.link-danger{color:#fca5a5}
+
+/* print / report styles */
+@media print{body{background:#fff}.no-print{display:none!important}}
+</style>
+</head>
+<body>
+<div id="authScreen" class="auth-wrap">
+  <div class="auth-hero">
+    <div class="auth-hero-inner">
+      <div class="brand-mark">
+        <img src="icon.svg" alt="Esteshari">
+        <div><div class="name">Esteshari</div><div class="tag">MEP Document Portal · Cloud</div></div>
+      </div>
+      <h1 class="hero-title">Multi-project MEP control — your work follows your account</h1>
+      <p class="hero-text">Separate projects, controlled access for consultants and contractors, cloud-synced decisions and history.</p>
+    </div>
+    <div class="hero-footer">© All rights reserved. Nexus Solutions</div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-card">
+      <div id="configWarn" class="setup-box hidden">
+        <strong>Cloud setup required (one time)</strong><br>
+        1. Free project at <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a><br>
+        2. SQL Editor → run <code>sql/schema.sql</code><br>
+        3. Settings → API → paste URL + anon key into <code>config.js</code><br>
+        4. Refresh this page
+      </div>
+      <h2 id="authHeading">Welcome back</h2>
+      <p class="lead" id="authLead">Sign in to your Esteshari cloud account</p>
+      <div class="tabs">
+        <button type="button" id="tabLogin" class="active" onclick="showTab('login')">Sign In</button>
+        <button type="button" id="tabReg" onclick="showTab('register')">Create Account</button>
+      </div>
+      <div id="authError" class="alert alert-err hidden"></div>
+      <div id="loginForm">
+        <div class="fg"><label>Email</label><input type="email" id="loginEmail" autocomplete="username" placeholder="you@company.com"></div>
+        <div class="fg"><label>Password</label><input type="password" id="loginPass" autocomplete="current-password"></div>
+        <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      </div>
+      <div id="regForm" class="hidden">
+        <div class="fg"><label>Full name</label><input type="text" id="regName" autocomplete="name"></div>
+        <div class="fg"><label>Email</label><input type="email" id="regEmail" autocomplete="email"></div>
+        <div class="fg"><label>Password</label><input type="password" id="regPass" autocomplete="new-password" placeholder="Min 6 characters"></div>
+        <div class="fg"><label>Account type</label>
+          <div class="role-grid">
+            <div class="role-card" id="roleConsultant" onclick="selectRole('consultant')"><div class="ic">📋</div><div class="rl">Consultant</div><div class="rd">Review & approve</div></div>
+            <div class="role-card" id="roleContractor" onclick="selectRole('contractor')"><div class="ic">🏗️</div><div class="rl">Contractor</div><div class="rd">Submit documents</div></div>
+          </div>
+          <input type="hidden" id="regRole" value="">
+        </div>
+        <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="appScreen" class="app hidden">
+  <div id="sideOverlay" class="overlay-side hidden" onclick="closeSide()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <img src="icon.svg" alt="">
+      <div><div class="bn">Esteshari</div><div class="bt">Cloud · MEP Portal</div></div>
+    </div>
+    <nav class="nav" id="navLinks"></nav>
+    <div class="side-foot">
+      <div class="uname" id="userName">—</div>
+      <div class="urole" id="userRole">—</div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="doLogout()">Sign Out</button>
+      <div class="copyright">© All rights reserved.<br>Nexus Solutions<br><span id="sideVersion"></span></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="checkUpdate(true)">Check for updates</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <button type="button" onclick="openSide()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer">☰</button>
+      <strong>Esteshari</strong><span style="width:28px"></span>
+    </div>
+    <div id="updateBanner" class="update-banner no-print">
+      <span class="ub-t">⬆️ تحديث جديد</span>
+      <span id="ubMsg" style="flex:1"></span>
+      <span class="ub-p" id="ubBarWrap" style="display:none"><i id="ubBar"></i></span>
+      <button class="btn btn-primary btn-sm" id="ubBtn" onclick="ubPrimary()" style="display:none"></button>
+      <button class="btn btn-ghost btn-sm" onclick="hideUpdateBanner()">×</button>
+    </div>
+    <div class="content" id="pageContent"></div>
+    <div class="page-footer">© All rights reserved. Nexus Solutions</div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

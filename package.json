@@ -1,0 +1,51 @@
+{
+  "name": "esteshari",
+  "productName": "Esteshari",
+  "version": "2.1.0",
+  "description": "Esteshari – MEP Document Portal by Nexus Solutions",
+  "author": "Nexus Solutions",
+  "license": "UNLICENSED",
+  "main": "electron/main.js",
+  "scripts": {
+    "desktop": "electron .",
+    "pack:win": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.nexussolutions.esteshari",
+    "productName": "Esteshari",
+    "copyright": "Copyright © Nexus Solutions. All rights reserved.",
+    "directories": { "output": "dist" },
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "update.config.json",
+      "package.json"
+    ],
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://YOUR-SERVER/esteshari-releases/"
+      }
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Esteshari",
+      "differentialPackage": false
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
